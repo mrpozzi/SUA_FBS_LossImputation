@@ -45,6 +45,7 @@
 # ***** Commodity prices, derived from trade data *****
 # **** Attention. These are import and export prices for each country, without considering quantities. It would be better to calculate the value of worldwide traded commodities and divide it by the quantity of the world trade volume. Need to have data on quantities. Ask Amanda.
 
+cat("\n SUA trade data\n")
 cat("Load SUA trade data\n")
 tradeSUA <- read.csv("csv/SUA_trade_unitvalue.csv",stringsAsFactors=FALSE)#
 
@@ -92,10 +93,12 @@ tradeSUA$time[tradeSUA$time==6] <- 5
 
 
 ### MOREWORHERE!!!
+## questi numeri non c'e verso di farli quadrare....
 
 #average yearly country import prices. 
 cat("Compute average yearly country import prices.\n")
 yimprice <- with(tradeSUA,do.call(rbind,lapply(unique(ItemCode),function(item){
+	#browser()
 		X <- tradeSUA[tradeSUA$ItemCode==item,]
 		data.frame(item,unique(year), yimprice=with(X,tapply(NUM_63,year,function(x){
 			# Cut outliers: not sure if we need it or not.... 
@@ -104,14 +107,17 @@ yimprice <- with(tradeSUA,do.call(rbind,lapply(unique(ItemCode),function(item){
 			# x[x<p5] <- p5
 			# x[x>p95] <- p95
 			mean(x,na.rm=TRUE)
-			})),yimprice2=with(X,tapply(NUM_63,time,function(x){
-			# Cut outliers: not sure if we need it or not.... 
-			# p5 <-  quantile(x,0.05,na.rm=TRUE)
-			# p95 <-  quantile(x,0.95,na.rm=TRUE)
-			# x[x<p5] <- p5
-			# x[x>p95] <- p95
-			mean(x,na.rm=TRUE)
 			})),row.names=paste(unique(year),item,sep="_"))
+			
+			# ,yimprice2=with(X,tapply(NUM_63,time,function(x){
+			# # Cut outliers: not sure if we need it or not.... 
+			# # p5 <-  quantile(x,0.05,na.rm=TRUE)
+			# # p95 <-  quantile(x,0.95,na.rm=TRUE)
+			# # x[x<p5] <- p5
+			# # x[x>p95] <- p95
+			# mean(x,na.rm=TRUE)
+			# }))
+			
 		}))[paste(year, ItemCode,sep="_"),])
 
 
@@ -126,14 +132,16 @@ yexprice <- with(tradeSUA,do.call(rbind,lapply(unique(ItemCode),function(item){
 			# x[x<p5] <- p5
 			# x[x>p95] <- p95
 			mean(x,na.rm=TRUE)
-			})),yexprice2=with(X,tapply(NUM_93,time,function(x){
-			# Cut outliers: not sure if we need it or not.... 
-			# p5 <-  quantile(x,0.05,na.rm=TRUE)
-			# p95 <-  quantile(x,0.95,na.rm=TRUE)
-			# x[x<p5] <- p5
-			# x[x>p95] <- p95
-			mean(x,na.rm=TRUE)
-			})),row.names=paste(unique(year),item,sep="_"))
+			})),
+			# yexprice2=with(X,tapply(NUM_93,time,function(x){
+			# # Cut outliers: not sure if we need it or not.... 
+			# # p5 <-  quantile(x,0.05,na.rm=TRUE)
+			# # p95 <-  quantile(x,0.95,na.rm=TRUE)
+			# # x[x<p5] <- p5
+			# # x[x>p95] <- p95
+			# mean(x,na.rm=TRUE)
+			# })),
+			row.names=paste(unique(year),item,sep="_"))
 		}))[paste(year, ItemCode,sep="_"),])
 
 
@@ -149,7 +157,7 @@ save(tradeSUA,file="SUA_trade_unitvalue.RData")
 # This file is used to merge ISO3 codes to FAOSTAT data.
 
 
-
+cat("\nCountry ISO codes\n")
 regionsFAO <- read.csv("csv/Directory_ISO vs FAOSTAT country codes.csv")
 regionsFAO$unsubregionname <- rep("Others",nrow(regionsFAO))
 
@@ -188,7 +196,7 @@ regionsFAO$unsubregionname[regionsFAO$unsubregioncode==150] <- "Europe"
 #colnames(regionsFAO)[8] <- "areacode"
 #sort areacode 
 
-#save "Directory_ISO vs FAOSTAT country codes.dta", replace
+
 save(regionsFAO,file="Directory_ISO_vs_FAO_STAT_country_codes.RData")
 
 # ***ISO vs FAOSTAT country codes.dta
@@ -199,6 +207,8 @@ save(regionsFAO,file="Directory_ISO_vs_FAO_STAT_country_codes.RData")
 # the data are repeated until 1961. However, in the estimation I will set 
 # observations before 1990 to 0 and use a dummy for missing value.*/
 
+
+cat("\nPaved roads data data\n")
 pavedRoads <- read.csv("csv/World Bank_Share of Paved Roads data.csv")
 
 #keep countryname countrycode v33- v53
@@ -210,6 +220,8 @@ pavedRoads <- pavedRoads[,colnames(pavedRoads)!="id"]
 
 
 ###FIXTHIS
+##have no idea what's going on here...
+
 # gen pavedroads_missing=pavedroads==.
 # gen pavedroads_t=.
 
@@ -263,6 +275,7 @@ save(pavedRoads,file="World_Bank_Share_of_Paved_Roads_data.RData")
 
 # ***************** WB DATA ON TEMPERATURE AND PRECIPITATION *****************
 
+cat("\nWB data on temperatures and precipitations\n")
 tempPrec <- read.csv("csv/World Bank_Temperature and Precipitation data.csv")
 colnames(tempPrec)[1] <- "CountryCode"
 colnames(tempPrec)[grep("Annual_temp",colnames(tempPrec))] <- "MeanTemp"
@@ -285,13 +298,15 @@ save(tempPrec,file="World_Bank_Temperature_and_Precipitation_data.RData")
 
 # ***************** World Bank GDP Data *****************
 
-
+cat("\nWorld Bank GDP Data\n")
+cat("Load WB GDP Data\n")
 dataGDP <- data.frame(read.csv("csv/World Bank_GDP data.csv",stringsAsFactors=FALSE))
 
 colnames(dataGDP) <- gsub("X","GDP",colnames(dataGDP))
 colnames(dataGDP)[1] <- "CountryName"
 colnames(dataGDP)[2] <- "CountryCode"
 
+cat("Reshape WB GDP Data\n")
 dataGDP <- reshape(dataGDP, dir = "long", varying = -(1:2), sep = "")
 
 
@@ -300,7 +315,7 @@ dataGDP[dataGDP$CountryCode=="ROM",] <- "ROU"
 dataGDP$GDP <- as.numeric(dataGDP$GDP)
 
 # sort countrycode year
-
+cat("Impute WB GDP Data\n")
 dataGDP$lnGDP <- log(dataGDP$GDP)
 modGDP <- lm(lnGDP~CountryCode+time,data=dataGDP)
 
@@ -312,10 +327,12 @@ dataGDP$GDP[is.na(dataGDP$GDP)]  <- gdpPred[is.na(dataGDP$GDP)]
 dataGDP <- subset(dataGDP,time!=2012) #Imputations have some discontinuities. For forecast better use GDP of 2011 
 
 # save "World Bank_GDP data.dta",replace
+cat("Save WB GDP Data\n")
 save(dataGDP,file="World_Bank_GDP_data.RData")
 
 # ***************** SUA LOSS RATIOS *****************
 
+cat("\n SUA TCF loss ratios\n")
 lossRatio <- read.csv("csv/SUA_TCF loss ratios.csv")
 colnames(lossRatio)[8] <- "fixedSUAratio"
 colnames(lossRatio) <- gsub("X","suaRatio",colnames(lossRatio))
@@ -333,6 +350,7 @@ lossRatio$suaRatioChanged<-(lossRatio$suaRatio!=lossRatio$fixedSUAratio)
 save(lossRatio,file="SUA_TCF_loss_ratios.RData")
    
 #***************** SUA LOSS RATIOS JOURNAL NOTES *****************
+cat("\n SUA loss ratios journal notes\n")
 journalLoss <- data.frame(read.csv("csv/SUA_Journal notes for losses.csv",stringsAsFactors=FALSE))
 
 journalLoss$Symbol[journalLoss$Symbol==""] <- "_"
@@ -348,6 +366,7 @@ save(journalLoss,file="SUA_Journal_notes_for_losses.RData")
 
 # *****************READ IN NEW NATIONAL FBS DATA*****************
 
+cat("\n New National FBS Data\n")
 fbsData <- read.csv("csv/NEW_National FBS data.csv")
 colnames(fbsData) <- c("Country","AreaCode","year","ItemCode","MacroCategory" ,"ItemName","NUM_51","NUM_61","NUM_91","NUM_71" ,"Opening.stocks","ClosingStock","NUM_121","LossRatio","Seed","Notes","ReferenceNumber","X","Mis","X1")
 fbsData <- subset(fbsData,ItemName!="Palay")
@@ -394,6 +413,4 @@ fbsData <- subset(fbsData,!is.na(ratio)&(ratio<=50)&(ratio!=0))
 # sort year areacode itemcode 
 
 # save "NEW_National FBS data.dta", replace
-
-cat("Save FBS data\n")
 save(fbsData,file="NEW_National_FBS_data.dta")
