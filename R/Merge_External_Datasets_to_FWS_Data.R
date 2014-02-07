@@ -23,32 +23,27 @@ load("SUA_waste.RData") # wasteSUA
 # //add the loss data obtained for data collection
 # append using  "NEW_National FBS data.dta"
 
-finalDataset <- merge(wasteSUA, fbsData)
+finalDataset <- merge(wasteSUA, fbsData,all=FALSE)
 rm(wasteSUA)
- 
+
+finalDataset <- finalDataset[,!colnames(finalDataset)%in%c("cereals","other_meat_proc")]
 #drop  cereals- other_meat_proc //redundant variables
 
 
 # add journal notes
-
 load("SUA_Journal_notes_for_losses.RData") # journalLoss
 
 
-finalDataset <- merge(finalDataset, journalLoss[,c("note","user","value","symbol")])
+finalDataset <- merge(finalDataset, journalLoss[,c("note","user","value","symbol")],all=FALSE)
 rm(journalLoss)
-# drop if _merge==2
-# drop _merge symbol value
+finalDataset <- finalDataset[,!colnames(finalDataset)%in%c("value","symbol")]
 
-# //merge ISO codes and world region classifications							   				
+
+# merge ISO codes and world region classifications							   		
 load("Directory_ISO_vs_FAO_STAT_country_codes.RData")
 
-finalDataset <- merge(finalDataset, regionsFAO[,c("iso3","unsubregioncode","unsubregionname","continentcode","continentname")])
+finalDataset <- merge(finalDataset, regionsFAO[,c("iso3","unsubregioncode","unsubregionname","continentcode","continentname")],all=FALSE)
 # sort areacode itemcode year
-
-
-# drop if _merge==2
-
-# rename iso3 countrycode
 
 colnames(finalDataset)[colnames(finalDataset)=="iso3"] <- "CountryCode"
 
@@ -69,12 +64,10 @@ finalDataset <- finalDataset[finalDataset$AreaName!="Test Area"] # no real obser
 #***********MERGE WORLD BANK DATA**************
 
 # sort countrycode year
-# cap drop _merge
-merge countrycode year using "${folddta}/.dta" 
 
 load("World_Bank_Share_of_Paved_Roads_data.RData")
 
-finalDataset <- merge(finalDataset, pavedRoads) # Taiwan not in WB roads data.
+finalDataset <- merge(finalDataset, pavedRoads, all=FALSE) # Taiwan not in WB roads data.
 
 # bys areaname itemname (year): replace pavedroads_original=pavedroads_original[_n-1] if year==2011 | year==2012 
 # *bys areaname itemname (year): replace pavedroads_missing=pavedroads_missing[_n-1] if year==2011 | year==2012 
@@ -82,48 +75,46 @@ finalDataset <- merge(finalDataset, pavedRoads) # Taiwan not in WB roads data.
 # bys areaname itemname (year): replace pavedroads_trend=pavedroads_trend[_n-1] if year==2011 | year==2012 
 
 #********************* WB Temperature and climate data
-# cap drop _merge
 # sort countrycode
 load("World_Bank_Temperature_and_Precipitation_data.RData")
-finalDataset <- merge(finalDataset, tempPrec)
-
-# drop if _merge==2
+finalDataset <- merge(finalDataset, tempPrec, all=FALSE)
 
 
 #* World Bank GDP
 # sort countrycode year
-# cap drop _merge
 
 
 load("World_Bank_GDP_data.RData")
-finalDataset <- merge(finalDataset, dataGDP[,c("GDPoriginal","GDP","CountryName")])
+finalDataset <- merge(finalDataset, dataGDP[,c("GDPoriginal","GDP","CountryName")], all=FALSE)
 
 
 # ta areaname if _merge==1 & year<=2010
 # ta countryname if _merge==2 & year>=1961
 # drop if _merge==2
 
-//repeat GDP of 2011 in 2012 (were it was unavailable)
-bys areaname itemname (year): replace gdp=gdp[_n-1] if year==2012 
-bys areaname itemname (year): replace gdppredicted=gdppredicted[_n-1] if year==2012 
+# //repeat GDP of 2011 in 2012 (were it was unavailable)
+# bys areaname itemname (year): replace gdp=gdp[_n-1] if year==2012 
+# bys areaname itemname (year): replace gdppredicted=gdppredicted[_n-1] if year==2012 
 
 #///////////// MERGE SUA LOSS RATIOS ////////////////
 
-cap drop _merge
-sort areacode itemcode year 
+
+# sort areacode itemcode year 
 merge areacode itemcode year using "SUA_TCF loss ratios.dta", keep(suaratio)
-drop if _merge==2
-drop _merge
+
+load("SUA_TCF_loss_ratios.RData")
+finalDataset <- merge(finalDataset, lossRatio[,"suaratio"], all=FALSE)
 
 
 #///////////// MERGE IMPORT AND EXPORT PRICES ////////////////
 
-sort itemcode year 
-merge itemcode year using "${folddta}/trade_unitvalue.dta", keep(yimprice yexprice)
-drop if _merge==2
-drop _merge
+# sort itemcode year 
+load("SUA_trade_unitvalue.RData")
+finalDataset <- merge(finalDataset, tradeSUA[,c("yimprice","yexprice")], all=FALSE)
+# keep(yimprice yexprice)
 
-sort areacode itemcode year 
+
+# sort areacode itemcode year 
 
 
 #*****************  VARIABLE CONSTRUCTION ****************

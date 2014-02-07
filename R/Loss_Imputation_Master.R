@@ -42,10 +42,25 @@
 rm(list=ls())
 gc()
 
-
 source("commodities.R")
-source("FWS_Data_Construction.R") # Classifies items into item groups and reshapes the data. 
-source("Elaboration_of_External_Datasets.R") # Elaborates the additional loss dataset, data from World Bank and other files. 
-source("Merge_External_Datasets_to_FWS_Data.do") # Constructs the final dataset for estimation. 
-source("Create_Artificial_Dataset_for_Loss_Imputation.R") # Constructs dataset for prediction. 
-source("FWS_Estimation_and_Imputation_Unified_Approach.do") # Estimates losses and produces table of imputed loss rates.    
+
+# Classifies items into item groups and reshapes the data. 
+cat("FWS data construction\n")
+source("FWS_Data_Construction.R") 
+
+# Elaborates the additional loss dataset, data from World Bank and other files. 
+cat("\nElaborate additional loss datasets\n")
+source("Elaboration_of_External_Datasets.R") 
+
+
+# Constructs the final dataset for estimation. 
+cat("\nMerge external datasets to FWS data\n")
+source("Merge_External_Datasets_to_FWS_Data.do") 
+
+# Constructs dataset for prediction. 
+cat("\nConstruct dataset for prediction\n")
+source("Create_Artificial_Dataset_for_Loss_Imputation.R") 
+
+# Estimates losses and produces table of imputed loss rates.    
+cat("\nEstimate losses and produce table of imputed loss rates\n")
+source("FWS_Estimation_and_Imputation_Unified_Approach.do") 

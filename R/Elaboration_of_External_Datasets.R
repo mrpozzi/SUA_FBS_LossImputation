@@ -45,10 +45,12 @@
 # ***** Commodity prices, derived from trade data *****
 # **** Attention. These are import and export prices for each country, without considering quantities. It would be better to calculate the value of worldwide traded commodities and divide it by the quantity of the world trade volume. Need to have data on quantities. Ask Amanda.
 
+cat("Load SUA trade data\n")
 tradeSUA <- read.csv("csv/SUA_trade_unitvalue.csv",stringsAsFactors=FALSE)#
 
 
 ### cleaning 
+cat("Clean SUA trade data\n")
 colnames(tradeSUA)[1] <- "AreaCode"
 colnames(tradeSUA)[2] <- "ItemCode"
 colnames(tradeSUA)[3] <- "ElementCode"
@@ -56,6 +58,7 @@ colnames(tradeSUA)[3] <- "ElementCode"
 tradeSUA <- tradeSUA[,!1:ncol(tradeSUA)%in%grep("SYMB",colnames(tradeSUA))]
 tradeSUA <- tradeSUA[tradeSUA$AreaCode!=298,] # test area
 
+cat("Reshape SUA trade data\n")
 tradeSUA <- reshape(tradeSUA, dir = "long", varying = -(1:3), sep = "_")
 tradeSUA <- tradeSUA[,colnames(tradeSUA)!="id"]
 
@@ -91,7 +94,7 @@ tradeSUA$time[tradeSUA$time==6] <- 5
 ### MOREWORHERE!!!
 
 #average yearly country import prices. 
-
+cat("Compute average yearly country import prices.\n")
 yimprice <- with(tradeSUA,do.call(rbind,lapply(unique(ItemCode),function(item){
 		X <- tradeSUA[tradeSUA$ItemCode==item,]
 		data.frame(item,unique(year), yimprice=with(X,tapply(NUM_63,year,function(x){
@@ -113,6 +116,7 @@ yimprice <- with(tradeSUA,do.call(rbind,lapply(unique(ItemCode),function(item){
 
 
 #average yearly country export prices. 
+cat("Compute average yearly country export prices.\n")
 yexprice <- with(tradeSUA,do.call(rbind,lapply(unique(ItemCode),function(item){
 		X <- tradeSUA[tradeSUA$ItemCode==item,]
 		data.frame(item,unique(year), yexprice=with(X,tapply(NUM_93,year,function(x){
@@ -133,8 +137,8 @@ yexprice <- with(tradeSUA,do.call(rbind,lapply(unique(ItemCode),function(item){
 		}))[paste(year, ItemCode,sep="_"),])
 
 
-
-tradeSUA <- merge(yimprice, yexprice)
+cat("Save SUA trade data\n")
+tradeSUA <- merge(yimprice, yexprice, all=FALSE)
 ## this is for doing a sanity check....
 # sanity <- read.dta("trade_unitvalue.dta")
 save(tradeSUA,file="SUA_trade_unitvalue.RData")
@@ -391,4 +395,5 @@ fbsData <- subset(fbsData,!is.na(ratio)&(ratio<=50)&(ratio!=0))
 
 # save "NEW_National FBS data.dta", replace
 
+cat("Save FBS data\n")
 save(fbsData,file="NEW_National_FBS_data.dta")

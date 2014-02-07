@@ -20,7 +20,7 @@
  
 # *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/ 
  
-
+cat("loading SUA_waste.csv\n")
 wasteSUA<-read.csv("csv/SUA_waste.csv",stringsAsFactors=FALSE)
 
 colnames(wasteSUA)[3] <- "AreaCode"
@@ -32,13 +32,14 @@ wasteSUA[,grep("SYMB",colnames(wasteSUA))][wasteSUA[,grep("SYMB",colnames(wasteS
 
 ### manipulation
 
- 
+cat("Relabeling Food groups\n")
 wasteSUA$foodgroup <- labelFoods(wasteSUA$ItemCode)
 
+cat("Reshaping dataset\n")
 wasteSUA <- reshape(wasteSUA, dir = "long", varying = -c(1:5,ncol(wasteSUA)), sep = "_")
 wasteSUA <- wasteSUA[,colnames(wasteSUA)!="id"]
 
-
+cat("Computing Waste Scores\n")
 numVar <-  unique(wasteSUA$ElementCode)
 wasteSUA <- do.call(rbind,lapply(unique(wasteSUA$AreaCode),function(area){
 	X <- wasteSUA[wasteSUA$AreaCode==area,]
@@ -66,5 +67,5 @@ wasteSUA$SYMB_71[is.na(wasteSUA$SYMB_71)] <- "_"
 wasteSUA$SYMB_91[is.na(wasteSUA$SYMB_91)] <- "_"
 wasteSUA$SYMB_121[is.na(wasteSUA$SYMB_121)] <- "_"
 
-
+cat("Saving Waste Scores\n")
 save(wasteSUA,file="SUA_waste.RData")
