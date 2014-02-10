@@ -12,51 +12,43 @@
 # GDP data. 
 # *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-# GARIERI
-insheet using "$foldcsv/SUA_waste.csv",clear
+# non so se leggere il csv o partire dai dati manipolati: chiedi...
+cat("loading SUA_waste.csv\n")
+wasteSUA <- read.csv("csv/SUA_waste.csv",stringsAsFactors=FALSE)
+load("SUA_waste.RData")
 
-gen year=2011 //2011 is the reference year. Country characteristics of this year are merged.
+# secondo me questo e inutile...
+# gen year=2011 //2011 is the reference year. Country characteristics of this year are merged.
+# # keep areaname itemname area item ele year num_2011 symb_2011
+# keep if ele==51 | ele==61
 
-keep areaname itemname area item ele year num_2011 symb_2011
-keep if ele==51 | ele==61
+# *drop remaining old countries:
+wasteSUA <- wasteSUA[!wasteSUA$areaname%in%c("China ex.int","Czechoslovakia","Ethiopia PDR","Gaza Strip (Palestine)","Netherlands Antilles","Serbia and Montenegro","USSR","Yemen Ar Rp","Yemen Dem","Yugoslav SFR"),] 
 
-*drop remaining old countries:
-drop if  areaname=="China ex.int" | areaname=="Czechoslovakia" | areaname=="Ethiopia PDR" | ///
-areaname=="Gaza Strip (Palestine)" |areaname=="Netherlands Antilles" | ///
-areaname=="Serbia and Montenegro" |areaname=="USSR" | areaname=="Yemen Ar Rp" | ///
-areaname=="Yemen Dem" |areaname=="Yugoslav SFR" 
-*not sure if drop these
-drop if areaname=="Belgium-Luxembourg" | areaname=="Gaza Strip (Palestine)" | areaname=="West Bank" 
+# *not sure if drop these
+wasteSUA <- wasteSUA[!wasteSUA$areaname%in%c("Belgium-Luxembourg","Gaza Strip (Palestine)","West Bank"),]
                         
 
-*levelsof areacode, local(acodes)
+# *levelsof areacode, local(acodes)
 rename area areacode
 levelsof item, local(icodes)
 
-bys areacode: keep if _n==1
+#che vuol dire questo?
+# bys areacode: keep if _n==1
 
-drop if areaname=="EU(12)ex.int"
-drop if areaname=="EU(15)ex.int" 
-drop if areaname=="EU(25)ex.int" 
-drop if areaname=="EU(27)ex.int" 
-drop if areaname=="Test Area" 
-*drop if areaname=="Belgium-Luxembourg" 
+wasteSUA <- wasteSUA[!wasteSUA$areaname%in%c("EU(12)ex.int","EU(15)ex.int","EU(25)ex.int","EU(27)ex.int","Test Area"),]
+# *drop if areaname=="Belgium-Luxembourg" 
  
  
 keep year areacode areaname 
- 
-foreach i in `icodes' { 
- 
-gen item`i'=1 
- 
-} 
- 
-foreach n in 51 71 61 91 121 { 
- 
-gen symb_`n'="" 
-gen num_`n'=. 
- 
-} 
+
+# foreach i in `icodes' { 
+# gen item`i'=1 
+# } 
+# foreach n in 51 71 61 91 121 { 
+# gen symb_`n'="" 
+# gen num_`n'=.  
+# } 
  
  
  
