@@ -17,20 +17,21 @@
            # are filled in into the following years.							   
 # *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+cat("Load SUA waste data\n")
 load("SUA_waste.RData") # wasteSUA
 #*keep if symb_121=="_" | symb_121=="*" 
 
 # //add the loss data obtained for data collection
 # append using  "NEW_National FBS data.dta"
-
+cat("Add the loss data obtained for data collection\n")
 finalDataset <- merge(wasteSUA, fbsData,all=FALSE)
 rm(wasteSUA)
 
 finalDataset <- finalDataset[,!colnames(finalDataset)%in%c("cereals","other_meat_proc")]
-#drop  cereals- other_meat_proc //redundant variables
 
 
 # add journal notes
+cat("Add journal notes\n")
 load("SUA_Journal_notes_for_losses.RData") # journalLoss
 
 
@@ -39,7 +40,8 @@ rm(journalLoss)
 finalDataset <- finalDataset[,!colnames(finalDataset)%in%c("value","symbol")]
 
 
-# merge ISO codes and world region classifications							   		
+# merge ISO codes and world region classifications
+cat("Merge ISO codes and world region classifications\n")
 load("Directory_ISO_vs_FAO_STAT_country_codes.RData")
 
 finalDataset <- merge(finalDataset, regionsFAO[,c("iso3","unsubregioncode","unsubregionname","continentcode","continentname")],all=FALSE)
@@ -58,13 +60,12 @@ finalDataset$CountryCode[finalDataset$AreaName=="West Bank"]  <- "PSE"
 finalDataset$CountryCode[finalDataset$AreaName=="Yemen Ar Rp"]  <- "YEM"
 finalDataset$CountryCode[finalDataset$AreaName=="Yemen Dem"]  <- "YEM"
 finalDataset$CountryCode[finalDataset$AreaName=="Yugoslav SFR"]  <- "SRB"
-
 finalDataset <- finalDataset[finalDataset$AreaName!="Test Area"] # no real observation
 
 #***********MERGE WORLD BANK DATA**************
 
 # sort countrycode year
-
+cat("Merge World Bank Data\n")
 load("World_Bank_Share_of_Paved_Roads_data.RData")
 
 finalDataset <- merge(finalDataset, pavedRoads, all=FALSE) # Taiwan not in WB roads data.
@@ -75,92 +76,60 @@ finalDataset <- merge(finalDataset, pavedRoads, all=FALSE) # Taiwan not in WB ro
 # bys areaname itemname (year): replace pavedroads_trend=pavedroads_trend[_n-1] if year==2011 | year==2012 
 
 #********************* WB Temperature and climate data
-# sort countrycode
+cat("Add Climate data\n")
 load("World_Bank_Temperature_and_Precipitation_data.RData")
 finalDataset <- merge(finalDataset, tempPrec, all=FALSE)
 
 
 #* World Bank GDP
-# sort countrycode year
-
-
+cat("Add World Bank GDP data\n")
 load("World_Bank_GDP_data.RData")
 finalDataset <- merge(finalDataset, dataGDP[,c("GDPoriginal","GDP","CountryName")], all=FALSE)
 
 
-# ta areaname if _merge==1 & year<=2010
-# ta countryname if _merge==2 & year>=1961
-# drop if _merge==2
-
-# //repeat GDP of 2011 in 2012 (were it was unavailable)
-# bys areaname itemname (year): replace gdp=gdp[_n-1] if year==2012 
-# bys areaname itemname (year): replace gdppredicted=gdppredicted[_n-1] if year==2012 
-
 #///////////// MERGE SUA LOSS RATIOS ////////////////
-
-
-# sort areacode itemcode year 
-merge areacode itemcode year using "SUA_TCF loss ratios.dta", keep(suaratio)
-
+cat("Add SUA loss ratios\n")
 load("SUA_TCF_loss_ratios.RData")
 finalDataset <- merge(finalDataset, lossRatio[,"suaratio"], all=FALSE)
 
 
 #///////////// MERGE IMPORT AND EXPORT PRICES ////////////////
-
-# sort itemcode year 
+cat("Add SUA trade unitvalue\n")
 load("SUA_trade_unitvalue.RData")
 finalDataset <- merge(finalDataset, tradeSUA[,c("yimprice","yexprice")], all=FALSE)
-# keep(yimprice yexprice)
 
-
-# sort areacode itemcode year 
 
 
 #*****************  VARIABLE CONSTRUCTION ****************
 
 
 #*********** CALCULATE LOSS RATIO *****************
-recode num_71 (.=0)
-cap drop ratio*
-gen num61=num_61
-gen num71=num_71
-recode num61 num71 (.=0)
 
-gen ratio=round(20*100*num_121/(num_51+num61+num71))/20 if num71>=0
-replace ratio=round(20*100*num_121/(num_51+num61))/20 if num71<0 
-drop num61 num71
+finalDataset <- transform(finalDataset,ratio=(NUM_71>=0)round(20*100*NUM_121/(NUM_51+NUM_61+NUM_71))/20 + (NUM_71<0)*round(20*100*NUM_121/(NUM_51+NUM_61))/20)
+finalDataset[finalDataset$ratio>100] <- NA # unfeasible losses
 
-replace ratio=. if ratio>100 // unfeasible losses
-
-***************
-
-gen region=1 if unsubregionname=="Southern Africa" | unsubregionname=="Middle Africa" | unsubregionname=="Eastern Africa" | unsubregionname=="Western Africa" 
-replace region=2 if unsubregionname=="Northern Africa" | unsubregionname=="Western Asia" 
-/*Northern Africa and Middle East*/
-replace region=3 if unsubregionname=="South America" |unsubregionname=="Central America" |unsubregionname=="Caribbean" 
-replace region=4 if unsubregionname=="Southern Europe" |unsubregionname=="Western Europe" |unsubregionname=="Northern Europe" |unsubregionname=="Northern America" | unsubregionname=="Australia and New Zealand" 
-/*Industrialized Countries: Europe without Eastern Europe, Northern America, Japan, Australia and New Zealand*/
-replace region=5 if unsubregionname=="Central Asia" | unsubregionname=="Eastern Europe"
-/*Eastern Europe and Central Asia*/
-replace region=6 if unsubregionname=="Southern Asia" |unsubregionname=="Southeastern Asia"  | unsubregionname=="Eastern Asia" | unsubregionname=="Micronesia" |unsubregionname=="Polynesia" |unsubregionname=="Melanesia" 
-/*All Asia, without Middle East, Central Asia and Japan. + Small Pacific Islands */
-replace region=4 if areacode==110 // =Japan. Goes to rich countries
+# ***************
+finalDataset <- transform(finalDataset, region= 1*(unsubregionname=="Southern Africa" | unsubregionname=="Middle Africa" | unsubregionname=="Eastern Africa" | unsubregionname=="Western Africa" )+2*(unsubregionname=="Northern Africa" | unsubregionname=="Western Asia" ) +
+# /*Northern Africa and Middle East*/
+3 * (unsubregionname=="South America" |unsubregionname=="Central America" |unsubregionname=="Caribbean" ) + 4 * (unsubregionname=="Southern Europe" |unsubregionname=="Western Europe" |unsubregionname=="Northern Europe" |unsubregionname=="Northern America" | unsubregionname=="Australia and New Zealand" ) +
+# /*Industrialized Countries: Europe without Eastern Europe, Northern America, Japan, Australia and New Zealand*/
+5*(unsubregionname=="Central Asia" | unsubregionname=="Eastern Europe") + 
+# /*Eastern Europe and Central Asia*/
+6 * (unsubregionname=="Southern Asia" |unsubregionname=="Southeastern Asia"  | unsubregionname=="Eastern Asia" | unsubregionname=="Micronesia" |unsubregionname=="Polynesia" |unsubregionname=="Melanesia" ) +
+# /*All Asia, without Middle East, Central Asia and Japan. + Small Pacific Islands */
+4 * (areacode==110)) # // =Japan. Goes to rich countries
 
 label def region 1 "SSA" 2 "NAf&MEast" 3 "Car,S&CeAm" 4 "INDUST" 5 "EaEU&CAs" 6 "S,SE,EAs&Pac." 
 label value region region
 
-gen newregion=unsubregionname
-
-replace newregion="Latin America" if unsubregionn=="Caribbean"|unsubregionn=="Central America"|unsubregionn=="South America"
-replace newregion="SSA" if unsubregionn=="Southern Africa" | unsubregionn=="Eastern Africa"| unsubregionn=="Middle Africa" | unsubregionn=="Western Africa"
-replace newregion="SSA" if areaname=="Sudan (former)" 
-replace newregion="Middle East" if newregion=="Western Asia"
-replace newregion="Central Asia to Pakistan" if newregion=="Central Asia" | areaname=="Iran"| areaname=="Afghanistan"| areaname=="Pakistan"
-replace newregion="South/-east Asia and Pacific" if newregion=="Southern Asia" | newregion=="Southeastern Asia" | newregion=="Micronesia"| newregion=="Polynesia"| newregion=="Melanesia"
-replace newregion="Balkan" if areaname=="Albania" | areaname=="Bosnia and Herzegovina" | ///
- areaname=="Croatia" | areaname=="Montenegro" | areaname=="Serbia"  | areaname=="Slovenia" | /// 
- areaname=="The former Yugoslav Republic of Macedonia"
+finalDataset$newregion <- finalDataset$unsubregionname
+finalDataset$newregion[finalDataset$unsubregionn%in%c("Caribbean","Central America","South America")] <- "Latin America" 
+finalDataset$newregion[finalDataset$unsubregionn%in%c("Southern Africa","Eastern Africa","Middle Africa","Western Africa")|finalDataset$areaname=="Sudan (former)"] <- "SSA" 
+finalDataset$newregion[finalDataset$unsubregionn=="Western Asia"] <-"Middle East" 
+finalDataset$newregion[finalDataset$unsubregionn%in%c("Central Asia","Iran","Afghanistan","Pakistan")]
+<-"Central Asia to Pakistan"
+finalDataset$newregion[finalDataset$unsubregionn%in%c("Southern Asia","Southeastern Asia","Micronesia","Polynesia","Melanesia")]<-"South/-east Asia and Pacific"
+finalDataset$newregion[finalDataset$unsubregionn%in%c("Albania","Bosnia and Herzegovina","Croatia","Montenegro","Serbia","Slovenia","The former Yugoslav Republic of Macedonia")]<- "Balkan"
 
  
  

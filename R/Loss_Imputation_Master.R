@@ -55,7 +55,7 @@ source("Elaboration_of_External_Datasets.R")
 
 # Constructs the final dataset for estimation. 
 cat("\nMerge external datasets to FWS data\n")
-source("Merge_External_Datasets_to_FWS_Data.do") 
+source("Merge_External_Datasets_to_FWS_Data.R") 
 
 # Constructs dataset for prediction. 
 cat("\nConstruct dataset for prediction\n")
